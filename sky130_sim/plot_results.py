@@ -18,6 +18,32 @@ def load(fn):
     return d[:, 0], d[:, 1], d[:, 3]      # freq/time, colA, colB
 
 
+# ---------- 0. Single inverter — small-signal AC amplitude & phase ----------
+fs, ms, ps = load("ac_single_inverter.txt")
+ps = np.unwrap(np.radians(ps)) * 180/np.pi
+A0 = ms[0]
+fp = np.interp(-(A0-3), -ms, fs)       # -3 dB pole
+fig, (a1, a2) = plt.subplots(2, 1, figsize=(7.2, 5.2), sharex=True)
+a1.semilogx(fs, ms, color=BLUE, lw=2)
+a1.axhline(A0, color=GREY, ls=":", lw=1); a1.axhline(A0-3, color=GREY, ls=":", lw=1)
+a1.axvline(fp, color=RED, ls="--", lw=1.2); a1.plot(fp, A0-3, "o", color=RED)
+a1.annotate(f"DC gain A₀ = {A0:.0f} dB ({10**(A0/20):.0f}×)", (fs[0], A0), (fs[0]*3, A0-9),
+            color=BLUE, fontsize=9)
+a1.annotate(f"−3 dB @ f_p = {fp/1e9:.2f} GHz", (fp, A0-3), (fp*1.4, A0-14),
+            color=RED, fontsize=9, arrowprops=dict(arrowstyle="->", color=RED))
+a1.set_ylabel("|H|  amplitude  [dB]")
+a1.set_title("sky130 single CMOS inverter — small-signal AC (biased at V_trip)", fontsize=11)
+a2.semilogx(fs, ps, color=BLUE, lw=2)
+a2.axhline(180, color=GREY, ls=":", lw=1); a2.axhline(90, color=GREY, ls=":", lw=1)
+a2.axvline(fp, color=RED, ls="--", lw=1.2)
+a2.annotate("180° at DC (inverting);\none pole → −90° per decade toward 90°",
+            (fp, 135), (fp*1.5, 150), color=BLUE, fontsize=9,
+            arrowprops=dict(arrowstyle="->", color=BLUE))
+a2.set_ylabel("∠H  phase  [deg]"); a2.set_xlabel("frequency  [Hz]")
+a2.set_yticks([0, 45, 90, 135, 180])
+fig.tight_layout(); fig.savefig("fig_ac_single_inverter.png", bbox_inches="tight")
+print(f"single inverter: A0={A0:.1f} dB, pole fp={fp/1e9:.2f} GHz, DC phase={ps[0]:.0f} deg")
+
 # ---------- 1. AC loop gain, 3-stage (odd -> oscillates) ----------
 f, mag, ph = load("ac_loopgain_3stage.txt")
 ph = np.unwrap(np.radians(ph)) * 180/np.pi

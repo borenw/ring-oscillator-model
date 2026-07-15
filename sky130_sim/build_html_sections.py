@@ -114,6 +114,13 @@ ngspice result — the exact decks are in Section 7.</p>
     <div class="cap">Three inverters close the loop (odd). The AC test breaks the loop with a 1 MH inductor (DC-closed for bias, AC-open) and injects through a 1 MF cap.</div></aside>
 </div>
 
+<p><b>Single-inverter response — the building block.</b> One sky130 inverter's small-signal AC, biased at its
+switching threshold (V<sub>trip</sub> = 0.87 V) — a single-pole inverting gain stage:</p>
+<div class="simfig"><img src="sky130_sim/fig_ac_single_inverter.png" alt="single sky130 inverter small-signal AC: 22 dB DC gain, inverting 180 deg at DC, one pole at 0.89 GHz">
+  <div class="cap"><b>A₀ = 22 dB (13×), inverting (∠H = 180° at DC), one dominant pole at f<sub>p</sub> = 0.89 GHz.</b>
+  Three of these in a loop give the 66 dB / three-pole loop gain below; the 180° of inversion per stage is what
+  lets an <i>odd</i> ring reach the oscillation condition.</div></div>
+
 <p><b>AC — open-loop loop gain (frequency &amp; phase response).</b> This replicates the §3/§4 Bode diagrams with real devices:</p>
 <div class="simfig"><img src="sky130_sim/fig_ac_3stage.png" alt="sky130 3-stage ring open-loop loop gain: |T| and phase vs frequency, phase crosses 0 deg at 1.19 GHz with 45 dB gain">
   <div class="cap"><b>Odd 3-stage (§4 replica):</b> DC loop gain 66 dB; ∠T crosses 0° at <b>1.19 GHz</b>
@@ -221,6 +228,7 @@ volare enable --pdk sky130 c6d73a35f524070e85faff4a6a9eef49553ebc2b
 cd sky130_sim
 ./run.sh'''),
     ("inv.spice — sky130 CMOS inverter", "spice", "inv.spice", None),
+    ("ac_single_inverter.spice — single inverter, small-signal AC", "spice", "ac_single_inverter.spice", None),
     ("ac_loopgain_3stage.spice — odd ring, open-loop AC", "spice", "ac_loopgain_3stage.spice", None),
     ("ac_openloop_A12parA3.spice — helper cell A1·A2 ∥ A3, open-loop amplitude/phase", "spice", "ac_openloop_A12parA3.spice", None),
     ("ac_loopgain_4stage.spice — even ring, open-loop AC", "spice", "ac_loopgain_4stage.spice", None),

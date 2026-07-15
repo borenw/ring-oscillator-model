@@ -276,6 +276,13 @@ ngspice result — the exact decks are in Section 7.</p>
     <div class="cap">Three inverters close the loop (odd). The AC test breaks the loop with a 1 MH inductor (DC-closed for bias, AC-open) and injects through a 1 MF cap.</div></aside>
 </div>
 
+<p><b>Single-inverter response — the building block.</b> One sky130 inverter's small-signal AC, biased at its
+switching threshold (V<sub>trip</sub> = 0.87 V) — a single-pole inverting gain stage:</p>
+<div class="simfig"><img src="sky130_sim/fig_ac_single_inverter.png" alt="single sky130 inverter small-signal AC: 22 dB DC gain, inverting 180 deg at DC, one pole at 0.89 GHz">
+  <div class="cap"><b>A₀ = 22 dB (13×), inverting (∠H = 180° at DC), one dominant pole at f<sub>p</sub> = 0.89 GHz.</b>
+  Three of these in a loop give the 66 dB / three-pole loop gain below; the 180° of inversion per stage is what
+  lets an <i>odd</i> ring reach the oscillation condition.</div></div>
+
 <p><b>AC — open-loop loop gain (frequency &amp; phase response).</b> This replicates the §3/§4 Bode diagrams with real devices:</p>
 <div class="simfig"><img src="sky130_sim/fig_ac_3stage.png" alt="sky130 3-stage ring open-loop loop gain: |T| and phase vs frequency, phase crosses 0 deg at 1.19 GHz with 45 dB gain">
   <div class="cap"><b>Odd 3-stage (§4 replica):</b> DC loop gain 66 dB; ∠T crosses 0° at <b>1.19 GHz</b>
@@ -386,6 +393,33 @@ XMN out in vss vss sky130_fd_pr__nfet_01v8 L=0.15 W=1.0 nf=1 m=1
 * small explicit load so every stage sees a realistic fan-out cap
 Cload out vss 5f
 .ends inv</pre></div></details>
+<details class="codeblk"><summary>📄 ac_single_inverter.spice — single inverter, small-signal AC</summary><div class="body"><pre class="code">* ================================================================
+*  Single sky130 CMOS inverter — small-signal AC amplitude &amp; phase.
+*  Biased at its switching threshold (self-bias via a big inductor,
+*  DC-closed / AC-open), stimulus injected at the input.
+*  H(f) = V(out)/V(in)  — a single-pole inverting gain stage:
+*  |H|(0) = A0, phase = 180deg at DC, rolling to +90 (=-270) as f-&gt;inf.
+* ================================================================
+.lib &quot;__LIBPATH__&quot; tt
+.include &quot;inv.spice&quot;
+
+.param SUP=1.8
+Vdd vdd 0 {SUP}
+
+Xinv in out vdd 0 inv
+Lbias out in 1e6            ; DC self-bias to Vtrip, AC-open
+Cinj nac in  1e6
+Vac  nac 0   dc 0 ac 1
+
+.control
+  op
+  print v(in) v(out)
+  ac dec 60 1e6 1e12
+  let hmag = db(v(out))
+  let hph  = 180/PI * ph(v(out))
+  wrdata ac_single_inverter.txt hmag hph
+.endc
+.end</pre></div></details>
 <details class="codeblk"><summary>📄 ac_loopgain_3stage.spice — odd ring, open-loop AC</summary><div class="body"><pre class="code">* ================================================================
 *  sky130 3-stage ring oscillator  --  OPEN-LOOP loop-gain (AC)
 *  Replicates the phase-shift Bode diagram with real transistors.
@@ -632,6 +666,32 @@ def load(fn):
     return d[:, 0], d[:, 1], d[:, 3]      # freq/time, colA, colB
 
 
+# ---------- 0. Single inverter — small-signal AC amplitude &amp; phase ----------
+fs, ms, ps = load(&quot;ac_single_inverter.txt&quot;)
+ps = np.unwrap(np.radians(ps)) * 180/np.pi
+A0 = ms[0]
+fp = np.interp(-(A0-3), -ms, fs)       # -3 dB pole
+fig, (a1, a2) = plt.subplots(2, 1, figsize=(7.2, 5.2), sharex=True)
+a1.semilogx(fs, ms, color=BLUE, lw=2)
+a1.axhline(A0, color=GREY, ls=&quot;:&quot;, lw=1); a1.axhline(A0-3, color=GREY, ls=&quot;:&quot;, lw=1)
+a1.axvline(fp, color=RED, ls=&quot;--&quot;, lw=1.2); a1.plot(fp, A0-3, &quot;o&quot;, color=RED)
+a1.annotate(f&quot;DC gain A₀ = {A0:.0f} dB ({10**(A0/20):.0f}×)&quot;, (fs[0], A0), (fs[0]*3, A0-9),
+            color=BLUE, fontsize=9)
+a1.annotate(f&quot;−3 dB @ f_p = {fp/1e9:.2f} GHz&quot;, (fp, A0-3), (fp*1.4, A0-14),
+            color=RED, fontsize=9, arrowprops=dict(arrowstyle=&quot;-&gt;&quot;, color=RED))
+a1.set_ylabel(&quot;|H|  amplitude  [dB]&quot;)
+a1.set_title(&quot;sky130 single CMOS inverter — small-signal AC (biased at V_trip)&quot;, fontsize=11)
+a2.semilogx(fs, ps, color=BLUE, lw=2)
+a2.axhline(180, color=GREY, ls=&quot;:&quot;, lw=1); a2.axhline(90, color=GREY, ls=&quot;:&quot;, lw=1)
+a2.axvline(fp, color=RED, ls=&quot;--&quot;, lw=1.2)
+a2.annotate(&quot;180° at DC (inverting);\none pole → −90° per decade toward 90°&quot;,
+            (fp, 135), (fp*1.5, 150), color=BLUE, fontsize=9,
+            arrowprops=dict(arrowstyle=&quot;-&gt;&quot;, color=BLUE))
+a2.set_ylabel(&quot;∠H  phase  [deg]&quot;); a2.set_xlabel(&quot;frequency  [Hz]&quot;)
+a2.set_yticks([0, 45, 90, 135, 180])
+fig.tight_layout(); fig.savefig(&quot;fig_ac_single_inverter.png&quot;, bbox_inches=&quot;tight&quot;)
+print(f&quot;single inverter: A0={A0:.1f} dB, pole fp={fp/1e9:.2f} GHz, DC phase={ps[0]:.0f} deg&quot;)
+
 # ---------- 1. AC loop gain, 3-stage (odd -&gt; oscillates) ----------
 f, mag, ph = load(&quot;ac_loopgain_3stage.txt&quot;)
 ph = np.unwrap(np.radians(ph)) * 180/np.pi
@@ -789,7 +849,7 @@ set -e
 #   pip install volare &amp;&amp; volare enable --pdk sky130 &lt;version&gt;
 LIB=&quot;${SKY130_LIB:-$HOME/.volare/volare/sky130/versions/c6d73a35f524070e85faff4a6a9eef49553ebc2b/sky130A/libs.tech/ngspice/sky130.lib.spice}&quot;
 
-for deck in ac_loopgain_3stage ac_loopgain_4stage ac_loopgain_8stage \
+for deck in ac_single_inverter ac_loopgain_3stage ac_loopgain_4stage ac_loopgain_8stage \
             ac_openloop_A12parA3 tran_3stage tran_4stage tran_8stage; do
   sed &quot;s|__LIBPATH__|$LIB|&quot; &quot;$deck.spice&quot; &gt; &quot;_run_$deck.spice&quot;
   ngspice -b &quot;_run_$deck.spice&quot;

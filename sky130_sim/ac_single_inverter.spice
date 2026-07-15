@@ -1,0 +1,27 @@
+* ================================================================
+*  Single sky130 CMOS inverter — small-signal AC amplitude & phase.
+*  Biased at its switching threshold (self-bias via a big inductor,
+*  DC-closed / AC-open), stimulus injected at the input.
+*  H(f) = V(out)/V(in)  — a single-pole inverting gain stage:
+*  |H|(0) = A0, phase = 180deg at DC, rolling to +90 (=-270) as f->inf.
+* ================================================================
+.lib "__LIBPATH__" tt
+.include "inv.spice"
+
+.param SUP=1.8
+Vdd vdd 0 {SUP}
+
+Xinv in out vdd 0 inv
+Lbias out in 1e6            ; DC self-bias to Vtrip, AC-open
+Cinj nac in  1e6
+Vac  nac 0   dc 0 ac 1
+
+.control
+  op
+  print v(in) v(out)
+  ac dec 60 1e6 1e12
+  let hmag = db(v(out))
+  let hph  = 180/PI * ph(v(out))
+  wrdata ac_single_inverter.txt hmag hph
+.endc
+.end
