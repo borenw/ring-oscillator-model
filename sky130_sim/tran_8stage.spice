@@ -1,0 +1,42 @@
+* ================================================================
+*  sky130 "4-helper" 8-inverter ring  --  CLOSED-LOOP transient
+*  Topology traced from the "Result: 4 helpers A3*" sketch:
+*    4-cell ring, 8 inverters total.
+*    Top cell   : A1(P->Q) A2(Q->R) with helper A3 (P->R)   [outputs shorted at R]
+*    Right stage: A3'   (R->S)
+*    Bottom cell: Ab1(S->T) Ab2(T->U) with helper A3'' (S->U) [shorted at U]
+*    Left stage : A3''' (U->P closes the loop through the left inverter)
+*  Feedback node: U -> (left inverter) -> P.
+* ================================================================
+.lib "__LIBPATH__" tt
+.include "inv.spice"
+
+.param SUP=1.8
+Vdd vdd 0 {SUP}
+
+* left inverter A3''' : U -> P
+Xl  U P vdd 0 inv
+* top cell
+Xa1 P Q vdd 0 inv
+Xa2 Q R vdd 0 inv
+Xa3 P R vdd 0 inv          ; helper, output shorted to R
+* right inverter A3' : R -> S
+Xr  R S vdd 0 inv
+* bottom cell
+Xb1 S T vdd 0 inv
+Xb2 T U vdd 0 inv
+Xb3 S U vdd 0 inv          ; helper, output shorted to U
+
+* seed away from the metastable point
+.ic v(P)=0 v(R)=1.8 v(S)=0 v(U)=1.8
+
+.control
+  tran 1p 20n uic
+  wrdata tran_8stage.txt v(P) v(R) v(S) v(U)
+  meas tran t1 when v(U)=0.9 rise=4
+  meas tran t2 when v(U)=0.9 rise=6
+  let Tosc = (t2 - t1)/2
+  let Fosc = 1/Tosc
+  print Tosc Fosc
+.endc
+.end

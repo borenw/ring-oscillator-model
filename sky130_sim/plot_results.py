@@ -112,4 +112,39 @@ ax.set_title("sky130 4-stage ring — transient: LATCHES to a stable state "
 ax.legend(ncol=4, fontsize=9, loc="center right")
 fig.tight_layout(); fig.savefig("fig_tran_4stage.png", bbox_inches="tight")
 print("4-stage transient: latched (even ring, no oscillation)")
+
+# ---------- 5. AC loop gain, 8-inverter "4-helper" ring (even -> latch) ----------
+f8, mag8, ph8 = load("ac_loopgain_8stage.txt")
+ph8 = np.unwrap(np.radians(ph8)) * 180/np.pi
+fig, (a1, a2) = plt.subplots(2, 1, figsize=(7.2, 5.4), sharex=True)
+a1.semilogx(f8, mag8, color="#6554C0", lw=2); a1.axhline(0, color=GREY, ls=":", lw=1)
+a1.plot(f8[0], mag8[0], "o", color=RED)
+a1.annotate(f"DC |T| = {mag8[0]:.0f} dB", (f8[0], mag8[0]), (f8[0]*3, mag8[0]-22),
+            color=RED, fontsize=9, arrowprops=dict(arrowstyle="->", color=RED))
+a1.set_ylabel("|T|  [dB]"); a1.set_title(
+    "sky130 8-inverter '4-helper' ring — open-loop loop gain (EVEN → positive feedback)",
+    fontsize=10.5)
+a2.semilogx(f8, ph8, color="#6554C0", lw=2)
+a2.axhline(0, color=RED, ls=":", lw=1.2); a2.plot(f8[0], ph8[0], "o", color=RED)
+a2.annotate("∠T ≈ 0° at DC with |T| = 119 dB\n→ 8 inverters = even parity = positive feedback\n"
+            "→ latches (like the 4-stage ring, only stronger)",
+            (f8[0], ph8[0]), (f8[0]*3, -230), color=RED, fontsize=9,
+            arrowprops=dict(arrowstyle="->", color=RED))
+a2.set_ylabel("∠T  [deg]"); a2.set_xlabel("frequency  [Hz]")
+fig.tight_layout(); fig.savefig("fig_ac_8stage.png", bbox_inches="tight")
+print(f"8-inv AC: DC phase {ph8[0]:.0f} deg, DC |T| {mag8[0]:.0f} dB -> positive feedback / latch")
+
+# ---------- 6. Transient, 8-inverter ring (latches) ----------
+d = np.loadtxt("tran_8stage.txt")
+t8 = d[:, 0]; v8 = [d[:, 1], d[:, 3], d[:, 5], d[:, 7]]; nm = ["P", "R", "S", "U"]
+fig, ax = plt.subplots(figsize=(7.4, 3.4))
+cols = [BLUE, RED, GREEN, "#6554C0"]
+for k in range(4):
+    ax.plot(t8*1e9, v8[k], color=cols[k], lw=1.5, label=f"v({nm[k]})")
+ax.set_xlabel("time  [ns]"); ax.set_ylabel("V"); ax.set_xlim(0, 3)
+ax.set_title("sky130 8-inverter '4-helper' ring — transient: LATCHES to a "
+             "stable DC state (no oscillation)", fontsize=10.5)
+ax.legend(ncol=4, fontsize=9, loc="upper right")
+fig.tight_layout(); fig.savefig("fig_tran_8stage.png", bbox_inches="tight")
+print(f"8-inv transient: latched to {v8[3][-1]:.3f} V (even parity, no oscillation)")
 print("All figures written.")

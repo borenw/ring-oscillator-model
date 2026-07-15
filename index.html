@@ -66,7 +66,8 @@
  <li><a href="#figB">4 · ✅ Odd 3-stage ring — phase sum sets f_osc</a></li>
  <li><a href="#code">5 · 🐍 Python model source</a></li>
  <li><a href="#sky130">6 · 🔬 SkyWater sky130 transistor-level simulation</a></li>
- <li><a href="#repro">7 · 🧾 Complete code to reproduce</a></li>
+ <li><a href="#ring8">7 · 🔁 8-inverter "4-helper" ring — even-parity latch</a></li>
+ <li><a href="#repro">8 · 🧾 Complete code to reproduce</a></li>
 </ul></div>
 
 <div id="concept" class="sub">1 · The idea in one line</div>
@@ -292,7 +293,85 @@ ngspice result — the exact decks are in Section 7.</p>
 <tr><td>4-stage</td><td>even → non-inverting</td><td class='num'>— (0° only at DC)</td><td class='num'>88 dB at DC</td><td><b>latches</b> (bistable)</td></tr>
 </tbody></table>
 
-<div id="repro" class="sub">7 · 🧾 Complete code to reproduce</div>
+<div id="ring8" class="sub">7 · 🔁 8-inverter "4-helper" ring — the even-parity latch</div>
+<p>The hand sketch's <b>"Result: 4 helpers A₃"</b> circuit chains the helper idea into a 4-cell ring:
+two 2-inverter cells (each bridged by a parallel helper) plus two single inverters — <b>8 inverters total</b>.
+I built and simulated exactly this topology in sky130 ngspice. It is a clean, faithful test of what happens
+when you scale the helper trick up — and the answer is a direct consequence of the page's own thesis.</p>
+
+<div class="simfig" style="max-width:560px;margin-left:0"><svg viewBox="0 0 470 200" xmlns="http://www.w3.org/2000/svg" style="max-width:470px">
+ <style>.w{stroke:#172B4D;stroke-width:1.5;fill:none}.n{font:600 9px sans-serif;fill:#5E6C84}
+  .nm{font:600 8.5px sans-serif}.box{fill:none;stroke:#C1C7D0;stroke-width:1;stroke-dasharray:3 3}</style>
+ <path class="w" d="M420,60 H442 V172 H16 V60"/>
+ <path d="M120,168 L112,172 L120,176 Z" fill="#172B4D"/>
+ <path class="w" d="M16,60 H40"/>
+ <polygon points="40,51 40,69 60,60" fill="#FFEBE6" stroke="#DE350B" stroke-width="1.6"/><circle cx="63" cy="60" r="3" fill="#fff" stroke="#DE350B" stroke-width="1.5"/>
+ <text class="nm" x="40" y="46" fill="#DE350B">A3‴</text>
+ <path class="w" d="M66,60 H92"/>
+ <rect class="box" x="96" y="34" width="120" height="98"/>
+ <path class="w" d="M92,60 H112"/>
+ <polygon points="112,51 112,69 132,60" fill="#DEEBFF" stroke="#0052CC" stroke-width="1.6"/><circle cx="135" cy="60" r="3" fill="#fff" stroke="#0052CC" stroke-width="1.5"/>
+ <text class="nm" x="115" y="47" fill="#0052CC">A1</text>
+ <path class="w" d="M138,60 H150"/><text class="n" x="140" y="55">Q</text>
+ <polygon points="150,51 150,69 170,60" fill="#DEEBFF" stroke="#0052CC" stroke-width="1.6"/><circle cx="173" cy="60" r="3" fill="#fff" stroke="#0052CC" stroke-width="1.5"/>
+ <text class="nm" x="153" y="47" fill="#0052CC">A2</text>
+ <path class="w" d="M176,60 H212"/>
+ <path class="w" d="M100,60 V108 H120"/>
+ <polygon points="120,99 120,117 140,108" fill="#DEEBFF" stroke="#00A3BF" stroke-width="1.6"/><circle cx="143" cy="108" r="3" fill="#fff" stroke="#00A3BF" stroke-width="1.5"/>
+ <text class="nm" x="122" y="132" fill="#00A3BF">A3</text>
+ <path class="w" d="M146,108 H208 V60"/>
+ <text class="nm" x="86" y="55" fill="#5E6C84">P</text><text class="nm" x="214" y="55" fill="#5E6C84">R</text>
+ <path class="w" d="M212,60 H232"/>
+ <polygon points="232,51 232,69 252,60" fill="#FFF0E6" stroke="#FF8B00" stroke-width="1.6"/><circle cx="255" cy="60" r="3" fill="#fff" stroke="#FF8B00" stroke-width="1.5"/>
+ <text class="nm" x="234" y="47" fill="#FF8B00">A3′</text>
+ <path class="w" d="M258,60 H284"/><text class="nm" x="278" y="55" fill="#5E6C84">S</text>
+ <rect class="box" x="288" y="34" width="120" height="98"/>
+ <path class="w" d="M284,60 H304"/>
+ <polygon points="304,51 304,69 324,60" fill="#DEEBFF" stroke="#0052CC" stroke-width="1.6"/><circle cx="327" cy="60" r="3" fill="#fff" stroke="#0052CC" stroke-width="1.5"/>
+ <text class="nm" x="306" y="47" fill="#0052CC">A4</text>
+ <path class="w" d="M330,60 H342"/><text class="n" x="332" y="55">T</text>
+ <polygon points="342,51 342,69 362,60" fill="#DEEBFF" stroke="#0052CC" stroke-width="1.6"/><circle cx="365" cy="60" r="3" fill="#fff" stroke="#0052CC" stroke-width="1.5"/>
+ <text class="nm" x="344" y="47" fill="#0052CC">A5</text>
+ <path class="w" d="M368,60 H416"/>
+ <path class="w" d="M292,60 V108 H312"/>
+ <polygon points="312,99 312,117 332,108" fill="#E3FCEF" stroke="#00875A" stroke-width="1.6"/><circle cx="335" cy="108" r="3" fill="#fff" stroke="#00875A" stroke-width="1.5"/>
+ <text class="nm" x="314" y="132" fill="#00875A">A3″</text>
+ <path class="w" d="M338,108 H412 V60"/>
+ <text class="nm" x="414" y="55" fill="#5E6C84">U</text>
+ <text x="235" y="192" text-anchor="middle" style="font:600 10px sans-serif;fill:#DE350B">8 inverters = EVEN parity → non-inverting loop → latch</text>
+</svg>
+  <div class="cap" style="text-align:left">Traced topology: U→A₃‴→P→[A1·A2 ∥ helper A3]→R→A₃′→S→[A4·A5 ∥ helper A3″]→U. Both loop paths
+  have an <b>even</b> inversion count (6 through the series pairs, 4 through the helpers), so at DC the loop is non-inverting.</div></div>
+
+<div class="panel" style="background:#FFEBE6;border-left:3px solid #DE350B;padding:12px 16px;border-radius:4px;margin:14px 0">
+<b>Result: it latches, it does not oscillate.</b> 8 is even → net non-inverting loop → <b>positive feedback</b>.
+This is the same mechanism as the §3 four-stage ring ("356°, not enough"): an even ring would need −360° of
+pole lag, reachable only at f=∞, so the DC positive feedback wins first. The 4 helpers add phase but cannot
+change the loop's parity.</div>
+
+<p><b>AC — open-loop loop gain:</b></p>
+<div class="simfig"><img src="sky130_sim/fig_ac_8stage.png" alt="sky130 8-inverter ring loop gain: DC phase 0 deg, 119 dB, positive feedback">
+  <div class="cap">∠T ≈ 0° at DC with <b>|T| = 119 dB</b> — even higher DC loop gain than the 4-stage ring (more stages), driving a firmer latch.</div></div>
+<p><b>Transient — closed loop:</b></p>
+<div class="simfig"><img src="sky130_sim/fig_tran_8stage.png" alt="sky130 8-inverter ring transient: latches to a stable DC state, no oscillation">
+  <div class="cap">Seeded off the metastable point, the nodes snap to a stable DC state within ~0.4 ns and stay there — no oscillation.</div></div>
+
+<h3 style="margin:22px 0 6px">Summary — 3-inverter vs 8-inverter (both real sky130 ngspice)</h3>
+<table><thead><tr><th>Metric</th><th>3-inverter ring (§6)</th><th>8-inverter "4-helper" ring</th></tr></thead>
+<tbody>
+<tr><td>Inverters / parity</td><td>3 · <b>odd</b></td><td>8 · <b>even</b></td></tr>
+<tr><td>Loop at DC</td><td>inverting (negative feedback)</td><td>non-inverting (positive feedback)</td></tr>
+<tr><td>DC loop gain |T|</td><td class='num'>66 dB</td><td class='num'>119 dB</td></tr>
+<tr><td>Small-signal ∠T = 0° crossing</td><td class='num'>1.19 GHz (Barkhausen met)</td><td class='num'>only at DC → no finite crossing</td></tr>
+<tr><td>Transient behaviour</td><td><b>sustained oscillation</b></td><td><b>latches</b> to a stable DC state</td></tr>
+<tr><td>Oscillation frequency</td><td class='num'>f<sub>osc</sub> = 4.36 GHz</td><td class='num'>— (none)</td></tr>
+<tr><td>Verdict</td><td>✅ oscillator</td><td>❌ bistable latch</td></tr>
+</tbody></table>
+<p class="hint">Takeaway: the helper trick can shift <i>where</i> an <b>odd</b> ring meets Barkhausen, but it cannot make an
+<b>even</b> ring oscillate — parity is set by the number of inversions around the loop, and 8 is even. To build a
+slower oscillator you add an <i>odd</i> number of stages (5, 7, 9 …), not an even one.</p>
+
+<div id="repro" class="sub">8 · 🧾 Complete code to reproduce</div>
 <p>Everything needed to regenerate every curve above from scratch. Files live in <code>sky130_sim/</code>. The netlists carry a <code>__LIBPATH__</code> placeholder that <code>run.sh</code> substitutes with your local sky130 model path.</p>
 <details class="codeblk"><summary>📄 Environment setup (macOS / Linux)</summary><div class="body"><pre class="code"># 1. ngspice
 brew install ngspice          # macOS   (Linux: apt install ngspice)
@@ -437,6 +516,82 @@ Xi4 n4 n1 vdd 0 inv
   print &quot;--- 4-stage transient done ---&quot;
 .endc
 .end</pre></div></details>
+<details class="codeblk"><summary>📄 ac_loopgain_8stage.spice — 8-inverter 4-helper ring, open-loop AC</summary><div class="body"><pre class="code">* ================================================================
+*  sky130 &quot;4-helper&quot; 8-inverter ring  --  OPEN-LOOP loop-gain (AC)
+*  Same 4-cell topology as tran_8stage.spice, loop broken at U-&gt;Xl.
+*  EVEN parity: both loop paths have an even # of inversions
+*  (6 via the A12/Ab12 pairs, 4 via the helpers) -&gt; DC loop gain is
+*  POSITIVE and large -&gt; positive feedback -&gt; the ring LATCHES.
+* ================================================================
+.lib &quot;__LIBPATH__&quot; tt
+.include &quot;inv.spice&quot;
+
+.param SUP=1.8
+Vdd vdd 0 {SUP}
+
+* loop break just before the left inverter
+Lbrk U   Pin 1e6
+Cinj nac Pin 1e6
+Vac  nac 0   dc 0 ac 1
+
+Xl  Pin P vdd 0 inv
+Xa1 P   Q vdd 0 inv
+Xa2 Q   R vdd 0 inv
+Xa3 P   R vdd 0 inv
+Xr  R   S vdd 0 inv
+Xb1 S   T vdd 0 inv
+Xb2 T   U vdd 0 inv
+Xb3 S   U vdd 0 inv
+
+.control
+  ac dec 60 1e6 5e11
+  let tmag = db(v(U))
+  let tph  = 180/PI * ph(v(U))
+  wrdata ac_loopgain_8stage.txt tmag tph
+.endc
+.end</pre></div></details>
+<details class="codeblk"><summary>📄 tran_8stage.spice — 8-inverter 4-helper ring, transient (latches)</summary><div class="body"><pre class="code">* ================================================================
+*  sky130 &quot;4-helper&quot; 8-inverter ring  --  CLOSED-LOOP transient
+*  Topology traced from the &quot;Result: 4 helpers A3*&quot; sketch:
+*    4-cell ring, 8 inverters total.
+*    Top cell   : A1(P-&gt;Q) A2(Q-&gt;R) with helper A3 (P-&gt;R)   [outputs shorted at R]
+*    Right stage: A3&#x27;   (R-&gt;S)
+*    Bottom cell: Ab1(S-&gt;T) Ab2(T-&gt;U) with helper A3&#x27;&#x27; (S-&gt;U) [shorted at U]
+*    Left stage : A3&#x27;&#x27;&#x27; (U-&gt;P closes the loop through the left inverter)
+*  Feedback node: U -&gt; (left inverter) -&gt; P.
+* ================================================================
+.lib &quot;__LIBPATH__&quot; tt
+.include &quot;inv.spice&quot;
+
+.param SUP=1.8
+Vdd vdd 0 {SUP}
+
+* left inverter A3&#x27;&#x27;&#x27; : U -&gt; P
+Xl  U P vdd 0 inv
+* top cell
+Xa1 P Q vdd 0 inv
+Xa2 Q R vdd 0 inv
+Xa3 P R vdd 0 inv          ; helper, output shorted to R
+* right inverter A3&#x27; : R -&gt; S
+Xr  R S vdd 0 inv
+* bottom cell
+Xb1 S T vdd 0 inv
+Xb2 T U vdd 0 inv
+Xb3 S U vdd 0 inv          ; helper, output shorted to U
+
+* seed away from the metastable point
+.ic v(P)=0 v(R)=1.8 v(S)=0 v(U)=1.8
+
+.control
+  tran 1p 20n uic
+  wrdata tran_8stage.txt v(P) v(R) v(S) v(U)
+  meas tran t1 when v(U)=0.9 rise=4
+  meas tran t2 when v(U)=0.9 rise=6
+  let Tosc = (t2 - t1)/2
+  let Fosc = 1/Tosc
+  print Tosc Fosc
+.endc
+.end</pre></div></details>
 <details class="codeblk"><summary>📄 plot_results.py — figures from the ngspice data</summary><div class="body"><pre class="code">#!/usr/bin/env python3
 &quot;&quot;&quot;
 Plot the sky130 ring-oscillator ngspice results.
@@ -551,28 +706,56 @@ ax.set_title(&quot;sky130 4-stage ring — transient: LATCHES to a stable state 
 ax.legend(ncol=4, fontsize=9, loc=&quot;center right&quot;)
 fig.tight_layout(); fig.savefig(&quot;fig_tran_4stage.png&quot;, bbox_inches=&quot;tight&quot;)
 print(&quot;4-stage transient: latched (even ring, no oscillation)&quot;)
+
+# ---------- 5. AC loop gain, 8-inverter &quot;4-helper&quot; ring (even -&gt; latch) ----------
+f8, mag8, ph8 = load(&quot;ac_loopgain_8stage.txt&quot;)
+ph8 = np.unwrap(np.radians(ph8)) * 180/np.pi
+fig, (a1, a2) = plt.subplots(2, 1, figsize=(7.2, 5.4), sharex=True)
+a1.semilogx(f8, mag8, color=&quot;#6554C0&quot;, lw=2); a1.axhline(0, color=GREY, ls=&quot;:&quot;, lw=1)
+a1.plot(f8[0], mag8[0], &quot;o&quot;, color=RED)
+a1.annotate(f&quot;DC |T| = {mag8[0]:.0f} dB&quot;, (f8[0], mag8[0]), (f8[0]*3, mag8[0]-22),
+            color=RED, fontsize=9, arrowprops=dict(arrowstyle=&quot;-&gt;&quot;, color=RED))
+a1.set_ylabel(&quot;|T|  [dB]&quot;); a1.set_title(
+    &quot;sky130 8-inverter &#x27;4-helper&#x27; ring — open-loop loop gain (EVEN → positive feedback)&quot;,
+    fontsize=10.5)
+a2.semilogx(f8, ph8, color=&quot;#6554C0&quot;, lw=2)
+a2.axhline(0, color=RED, ls=&quot;:&quot;, lw=1.2); a2.plot(f8[0], ph8[0], &quot;o&quot;, color=RED)
+a2.annotate(&quot;∠T ≈ 0° at DC with |T| = 119 dB\n→ 8 inverters = even parity = positive feedback\n&quot;
+            &quot;→ latches (like the 4-stage ring, only stronger)&quot;,
+            (f8[0], ph8[0]), (f8[0]*3, -230), color=RED, fontsize=9,
+            arrowprops=dict(arrowstyle=&quot;-&gt;&quot;, color=RED))
+a2.set_ylabel(&quot;∠T  [deg]&quot;); a2.set_xlabel(&quot;frequency  [Hz]&quot;)
+fig.tight_layout(); fig.savefig(&quot;fig_ac_8stage.png&quot;, bbox_inches=&quot;tight&quot;)
+print(f&quot;8-inv AC: DC phase {ph8[0]:.0f} deg, DC |T| {mag8[0]:.0f} dB -&gt; positive feedback / latch&quot;)
+
+# ---------- 6. Transient, 8-inverter ring (latches) ----------
+d = np.loadtxt(&quot;tran_8stage.txt&quot;)
+t8 = d[:, 0]; v8 = [d[:, 1], d[:, 3], d[:, 5], d[:, 7]]; nm = [&quot;P&quot;, &quot;R&quot;, &quot;S&quot;, &quot;U&quot;]
+fig, ax = plt.subplots(figsize=(7.4, 3.4))
+cols = [BLUE, RED, GREEN, &quot;#6554C0&quot;]
+for k in range(4):
+    ax.plot(t8*1e9, v8[k], color=cols[k], lw=1.5, label=f&quot;v({nm[k]})&quot;)
+ax.set_xlabel(&quot;time  [ns]&quot;); ax.set_ylabel(&quot;V&quot;); ax.set_xlim(0, 3)
+ax.set_title(&quot;sky130 8-inverter &#x27;4-helper&#x27; ring — transient: LATCHES to a &quot;
+             &quot;stable DC state (no oscillation)&quot;, fontsize=10.5)
+ax.legend(ncol=4, fontsize=9, loc=&quot;upper right&quot;)
+fig.tight_layout(); fig.savefig(&quot;fig_tran_8stage.png&quot;, bbox_inches=&quot;tight&quot;)
+print(f&quot;8-inv transient: latched to {v8[3][-1]:.3f} V (even parity, no oscillation)&quot;)
 print(&quot;All figures written.&quot;)</pre></div></details>
 <details class="codeblk"><summary>📄 run.sh — one-shot driver</summary><div class="body"><pre class="code">#!/usr/bin/env bash
 # Reproduce the sky130 ring-oscillator results.
 # Prereqs: ngspice, and the sky130 PDK models (via volare).
 set -e
-# 1) point this at your sky130 ngspice model library:
-#    (installed by:  pip install volare &amp;&amp; volare enable --pdk sky130 &lt;version&gt;)
+# Point this at your sky130 ngspice model library:
+#   pip install volare &amp;&amp; volare enable --pdk sky130 &lt;version&gt;
 LIB=&quot;${SKY130_LIB:-$HOME/.volare/volare/sky130/versions/c6d73a35f524070e85faff4a6a9eef49553ebc2b/sky130A/libs.tech/ngspice/sky130.lib.spice}&quot;
-for deck in ac_loopgain_3stage ac_loopgain_4stage tran_3stage tran_4stage; do
+
+for deck in ac_loopgain_3stage ac_loopgain_4stage ac_loopgain_8stage \
+            tran_3stage tran_4stage tran_8stage; do
   sed &quot;s|__LIBPATH__|$LIB|&quot; &quot;$deck.spice&quot; &gt; &quot;_run_$deck.spice&quot;
   ngspice -b &quot;_run_$deck.spice&quot;
 done
-# 4-stage AC deck is generated from the 3-stage one:
-python3 - &quot;$LIB&quot; &lt;&lt;&#x27;PY&#x27;
-import sys,re
-lib=sys.argv[1]
-s=open(&quot;ac_loopgain_3stage.spice&quot;).read().replace(&quot;__LIBPATH__&quot;,lib)
-s=s.replace(&quot;Xi3 n3  n3o vdd 0 inv&quot;,&quot;Xi3 n3  n4  vdd 0 inv\nXi4 n4  n3o vdd 0 inv&quot;)
-s=s.replace(&quot;ac_loopgain_3stage.txt&quot;,&quot;ac_loopgain_4stage.txt&quot;)
-open(&quot;_run_ac_loopgain_4stage.spice&quot;,&quot;w&quot;).write(s)
-PY
-ngspice -b _run_ac_loopgain_4stage.spice
+
 python3 plot_results.py</pre></div></details>
 <!--SKY130_SIM_END-->
 </div></body></html>
