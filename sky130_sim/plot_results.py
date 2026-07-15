@@ -113,38 +113,38 @@ ax.legend(ncol=4, fontsize=9, loc="center right")
 fig.tight_layout(); fig.savefig("fig_tran_4stage.png", bbox_inches="tight")
 print("4-stage transient: latched (even ring, no oscillation)")
 
-# ---------- 5. AC loop gain, 8-inverter "4-helper" ring (even -> latch) ----------
-f8, mag8, ph8 = load("ac_loopgain_8stage.txt")
-ph8 = np.unwrap(np.radians(ph8)) * 180/np.pi
-fig, (a1, a2) = plt.subplots(2, 1, figsize=(7.2, 5.4), sharex=True)
-a1.semilogx(f8, mag8, color="#6554C0", lw=2); a1.axhline(0, color=GREY, ls=":", lw=1)
-a1.plot(f8[0], mag8[0], "o", color=RED)
-a1.annotate(f"DC |T| = {mag8[0]:.0f} dB", (f8[0], mag8[0]), (f8[0]*3, mag8[0]-22),
-            color=RED, fontsize=9, arrowprops=dict(arrowstyle="->", color=RED))
-a1.set_ylabel("|T|  [dB]"); a1.set_title(
-    "sky130 8-inverter '4-helper' ring — open-loop loop gain (EVEN → positive feedback)",
-    fontsize=10.5)
-a2.semilogx(f8, ph8, color="#6554C0", lw=2)
-a2.axhline(0, color=RED, ls=":", lw=1.2); a2.plot(f8[0], ph8[0], "o", color=RED)
-a2.annotate("∠T ≈ 0° at DC with |T| = 119 dB\n→ 8 inverters = even parity = positive feedback\n"
-            "→ latches (like the 4-stage ring, only stronger)",
-            (f8[0], ph8[0]), (f8[0]*3, -230), color=RED, fontsize=9,
-            arrowprops=dict(arrowstyle="->", color=RED))
-a2.set_ylabel("∠T  [deg]"); a2.set_xlabel("frequency  [Hz]")
-fig.tight_layout(); fig.savefig("fig_ac_8stage.png", bbox_inches="tight")
-print(f"8-inv AC: DC phase {ph8[0]:.0f} deg, DC |T| {mag8[0]:.0f} dB -> positive feedback / latch")
-
-# ---------- 6. Transient, 8-inverter ring (latches) ----------
+# ---------- 5. Transient, 8-inverter "4-helper" ring (oscillates) ----------
 d = np.loadtxt("tran_8stage.txt")
-t8 = d[:, 0]; v8 = [d[:, 1], d[:, 3], d[:, 5], d[:, 7]]; nm = ["P", "R", "S", "U"]
+t8 = d[:, 0]; v8 = [d[:, 1], d[:, 3], d[:, 5], d[:, 7]]; nm = ["α", "β", "γ", "δ"]
+cx8 = crossings(t8, v8[0]); cx8 = cx8[cx8 > 3e-9]
+T8 = np.mean(np.diff(cx8)); f8osc = 1/T8
 fig, ax = plt.subplots(figsize=(7.4, 3.4))
-cols = [BLUE, RED, GREEN, "#6554C0"]
+cols = [BLUE, "#FF8B00", GREEN, "#6554C0"]
 for k in range(4):
     ax.plot(t8*1e9, v8[k], color=cols[k], lw=1.5, label=f"v({nm[k]})")
-ax.set_xlabel("time  [ns]"); ax.set_ylabel("V"); ax.set_xlim(0, 3)
-ax.set_title("sky130 8-inverter '4-helper' ring — transient: LATCHES to a "
-             "stable DC state (no oscillation)", fontsize=10.5)
-ax.legend(ncol=4, fontsize=9, loc="upper right")
+ax.set_xlabel("time  [ns]"); ax.set_ylabel("V"); ax.set_xlim(2.0, 3.6); ax.set_ylim(-0.2, 2.0)
+ax.set_title(f"sky130 8-inverter '4-helper' ring — transient: sustained oscillation, "
+             f"f_osc = {f8osc/1e9:.2f} GHz  (T = {T8*1e12:.0f} ps)", fontsize=10.5)
+ax.legend(ncol=4, fontsize=9, loc="lower center")
 fig.tight_layout(); fig.savefig("fig_tran_8stage.png", bbox_inches="tight")
-print(f"8-inv transient: latched to {v8[3][-1]:.3f} V (even parity, no oscillation)")
+print(f"8-inv transient: OSCILLATES, f_osc = {f8osc/1e9:.3f} GHz (T = {T8*1e12:.0f} ps)")
+
+# ---------- 6. Spectrum (FFT) of the 8-inverter oscillation ----------
+# resample onto a uniform grid, take the settled window, FFT
+mask = t8 > 3e-9
+tu = np.linspace(t8[mask][0], t8[-1], 8192)
+vu = np.interp(tu, t8, v8[0]) - np.mean(np.interp(tu, t8, v8[0]))
+win = np.hanning(len(vu)); sp = np.abs(np.fft.rfft(vu*win))
+fr = np.fft.rfftfreq(len(vu), tu[1]-tu[0])
+sp = sp/sp.max()
+fig, ax = plt.subplots(figsize=(7.4, 3.2))
+ax.plot(fr/1e9, 20*np.log10(sp+1e-6), color="#6554C0", lw=1.5)
+ax.axvline(f8osc/1e9, color=RED, ls="--", lw=1.2)
+ax.annotate(f"f_osc = {f8osc/1e9:.2f} GHz", (f8osc/1e9, -3), (f8osc/1e9+3, -12),
+            color=RED, fontsize=9, arrowprops=dict(arrowstyle="->", color=RED))
+ax.set_xlim(0, 25); ax.set_ylim(-70, 5)
+ax.set_xlabel("frequency  [GHz]"); ax.set_ylabel("spectrum  [dB]")
+ax.set_title("sky130 8-inverter '4-helper' ring — output spectrum (FFT of v(α))", fontsize=10.5)
+fig.tight_layout(); fig.savefig("fig_spec_8stage.png", bbox_inches="tight")
+print(f"8-inv spectrum: fundamental at {f8osc/1e9:.2f} GHz + odd harmonics")
 print("All figures written.")

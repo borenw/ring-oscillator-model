@@ -1,9 +1,9 @@
 * ================================================================
 *  sky130 "4-helper" 8-inverter ring  --  OPEN-LOOP loop-gain (AC)
-*  Same 4-cell topology as tran_8stage.spice, loop broken at U->Xl.
-*  EVEN parity: both loop paths have an even # of inversions
-*  (6 via the A12/Ab12 pairs, 4 via the helpers) -> DC loop gain is
-*  POSITIVE and large -> positive feedback -> the ring LATCHES.
+*  CORRECT 4-net topology (alpha beta gamma delta).
+*  Loop broken at node alpha: its two drivers (A5,A6) are routed to
+*  node "aret"; Lbrk feeds aret->alpha for DC bias (AC-open) and the
+*  stimulus is injected into alpha through Cinj.  T = V(aret).
 * ================================================================
 .lib "__LIBPATH__" tt
 .include "inv.spice"
@@ -11,24 +11,25 @@
 .param SUP=1.8
 Vdd vdd 0 {SUP}
 
-* loop break just before the left inverter
-Lbrk U   Pin 1e6
-Cinj nac Pin 1e6
+* drivers of alpha routed to the return node
+Xa5 de aret vdd 0 inv       ; A5  (delta->alpha)
+Xa6 ga aret vdd 0 inv       ; A3'' (gamma->alpha)
+Lbrk aret al 1e6            ; DC-closed, AC-open
+Cinj nac al  1e6
 Vac  nac 0   dc 0 ac 1
 
-Xl  Pin P vdd 0 inv
-Xa1 P   Q vdd 0 inv
-Xa2 Q   R vdd 0 inv
-Xa3 P   R vdd 0 inv
-Xr  R   S vdd 0 inv
-Xb1 S   T vdd 0 inv
-Xb2 T   U vdd 0 inv
-Xb3 S   U vdd 0 inv
+* rest of the network
+Xa1 al be vdd 0 inv
+Xa2 be ga vdd 0 inv
+Xa4 ga de vdd 0 inv
+Xa3 al ga vdd 0 inv
+Xa8 be de vdd 0 inv
+Xa7 de be vdd 0 inv
 
 .control
   ac dec 60 1e6 5e11
-  let tmag = db(v(U))
-  let tph  = 180/PI * ph(v(U))
+  let tmag = db(v(aret))
+  let tph  = 180/PI * ph(v(aret))
   wrdata ac_loopgain_8stage.txt tmag tph
 .endc
 .end

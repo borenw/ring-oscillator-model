@@ -1,12 +1,10 @@
 * ================================================================
 *  sky130 "4-helper" 8-inverter ring  --  CLOSED-LOOP transient
-*  Topology traced from the "Result: 4 helpers A3*" sketch:
-*    4-cell ring, 8 inverters total.
-*    Top cell   : A1(P->Q) A2(Q->R) with helper A3 (P->R)   [outputs shorted at R]
-*    Right stage: A3'   (R->S)
-*    Bottom cell: Ab1(S->T) Ab2(T->U) with helper A3'' (S->U) [shorted at U]
-*    Left stage : A3''' (U->P closes the loop through the left inverter)
-*  Feedback node: U -> (left inverter) -> P.
+*  CORRECT topology from the "Result: 4 helpers A3*" sketch:
+*    Only 4 nets: alpha(al) beta(be) gamma(ga) delta(de).
+*    Distance-1 ring : al->be->ga->de->al   (A1,A2,A4,A5)
+*    Distance-2 diags: al->ga, ga->al, be->de, de->be  (A3,A3'',A3',A3''')
+*    Each net is driven by 2 inverters (outputs shorted) and drives 2.
 * ================================================================
 .lib "__LIBPATH__" tt
 .include "inv.spice"
@@ -14,27 +12,25 @@
 .param SUP=1.8
 Vdd vdd 0 {SUP}
 
-* left inverter A3''' : U -> P
-Xl  U P vdd 0 inv
-* top cell
-Xa1 P Q vdd 0 inv
-Xa2 Q R vdd 0 inv
-Xa3 P R vdd 0 inv          ; helper, output shorted to R
-* right inverter A3' : R -> S
-Xr  R S vdd 0 inv
-* bottom cell
-Xb1 S T vdd 0 inv
-Xb2 T U vdd 0 inv
-Xb3 S U vdd 0 inv          ; helper, output shorted to U
+* --- distance-1 ring ---
+Xa1 al be vdd 0 inv       ; A1
+Xa2 be ga vdd 0 inv       ; A2
+Xa4 ga de vdd 0 inv       ; A4  (black, right)
+Xa5 de al vdd 0 inv       ; A5  (black, left)
+* --- distance-2 diagonals (the 4 helpers) ---
+Xa3 al ga vdd 0 inv       ; A3    (cyan helper)  -> shorted onto gamma
+Xa6 ga al vdd 0 inv       ; A3''  (green)        -> shorted onto alpha
+Xa8 be de vdd 0 inv       ; A3'   (orange)       -> shorted onto delta
+Xa7 de be vdd 0 inv       ; A3''' (red)          -> shorted onto beta
 
-* seed away from the metastable point
-.ic v(P)=0 v(R)=1.8 v(S)=0 v(U)=1.8
+* seed off the metastable point
+.ic v(al)=0 v(be)=1.8 v(ga)=1.8 v(de)=0
 
 .control
   tran 1p 20n uic
-  wrdata tran_8stage.txt v(P) v(R) v(S) v(U)
-  meas tran t1 when v(U)=0.9 rise=4
-  meas tran t2 when v(U)=0.9 rise=6
+  wrdata tran_8stage.txt v(al) v(be) v(ga) v(de)
+  meas tran t1 when v(al)=0.9 rise=4
+  meas tran t2 when v(al)=0.9 rise=6
   let Tosc = (t2 - t1)/2
   let Fosc = 1/Tosc
   print Tosc Fosc

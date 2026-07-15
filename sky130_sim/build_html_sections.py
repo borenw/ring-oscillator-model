@@ -4,7 +4,7 @@ Insert Section 6 (sky130 transistor-level sim) and Section 7 (reproduce code)
 into ../index.html, just before </div></body></html>, and add index entries.
 Idempotent: strips any previously-inserted block first.
 """
-import html, os, re
+import html, os, re, math
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 INDEX = os.path.join(HERE, "..", "index.html")
@@ -62,47 +62,43 @@ RING3_SVG = '''<svg viewBox="0 0 240 120" xmlns="http://www.w3.org/2000/svg" sty
  <text x="120" y="116" text-anchor="middle" style="font:600 10px sans-serif;fill:#00875A">3 × inverter → odd ring</text>
 </svg>'''
 
-RING8_SVG = '''<svg viewBox="0 0 470 200" xmlns="http://www.w3.org/2000/svg" style="max-width:470px">
- <style>.w{stroke:#172B4D;stroke-width:1.5;fill:none}.n{font:600 9px sans-serif;fill:#5E6C84}
-  .nm{font:600 8.5px sans-serif}.box{fill:none;stroke:#C1C7D0;stroke-width:1;stroke-dasharray:3 3}</style>
- <path class="w" d="M420,60 H442 V172 H16 V60"/>
- <path d="M120,168 L112,172 L120,176 Z" fill="#172B4D"/>
- <path class="w" d="M16,60 H40"/>
- <polygon points="40,51 40,69 60,60" fill="#FFEBE6" stroke="#DE350B" stroke-width="1.6"/><circle cx="63" cy="60" r="3" fill="#fff" stroke="#DE350B" stroke-width="1.5"/>
- <text class="nm" x="40" y="46" fill="#DE350B">A3‴</text>
- <path class="w" d="M66,60 H92"/>
- <rect class="box" x="96" y="34" width="120" height="98"/>
- <path class="w" d="M92,60 H112"/>
- <polygon points="112,51 112,69 132,60" fill="#DEEBFF" stroke="#0052CC" stroke-width="1.6"/><circle cx="135" cy="60" r="3" fill="#fff" stroke="#0052CC" stroke-width="1.5"/>
- <text class="nm" x="115" y="47" fill="#0052CC">A1</text>
- <path class="w" d="M138,60 H150"/><text class="n" x="140" y="55">Q</text>
- <polygon points="150,51 150,69 170,60" fill="#DEEBFF" stroke="#0052CC" stroke-width="1.6"/><circle cx="173" cy="60" r="3" fill="#fff" stroke="#0052CC" stroke-width="1.5"/>
- <text class="nm" x="153" y="47" fill="#0052CC">A2</text>
- <path class="w" d="M176,60 H212"/>
- <path class="w" d="M100,60 V108 H120"/>
- <polygon points="120,99 120,117 140,108" fill="#DEEBFF" stroke="#00A3BF" stroke-width="1.6"/><circle cx="143" cy="108" r="3" fill="#fff" stroke="#00A3BF" stroke-width="1.5"/>
- <text class="nm" x="122" y="132" fill="#00A3BF">A3</text>
- <path class="w" d="M146,108 H208 V60"/>
- <text class="nm" x="86" y="55" fill="#5E6C84">P</text><text class="nm" x="214" y="55" fill="#5E6C84">R</text>
- <path class="w" d="M212,60 H232"/>
- <polygon points="232,51 232,69 252,60" fill="#FFF0E6" stroke="#FF8B00" stroke-width="1.6"/><circle cx="255" cy="60" r="3" fill="#fff" stroke="#FF8B00" stroke-width="1.5"/>
- <text class="nm" x="234" y="47" fill="#FF8B00">A3′</text>
- <path class="w" d="M258,60 H284"/><text class="nm" x="278" y="55" fill="#5E6C84">S</text>
- <rect class="box" x="288" y="34" width="120" height="98"/>
- <path class="w" d="M284,60 H304"/>
- <polygon points="304,51 304,69 324,60" fill="#DEEBFF" stroke="#0052CC" stroke-width="1.6"/><circle cx="327" cy="60" r="3" fill="#fff" stroke="#0052CC" stroke-width="1.5"/>
- <text class="nm" x="306" y="47" fill="#0052CC">A4</text>
- <path class="w" d="M330,60 H342"/><text class="n" x="332" y="55">T</text>
- <polygon points="342,51 342,69 362,60" fill="#DEEBFF" stroke="#0052CC" stroke-width="1.6"/><circle cx="365" cy="60" r="3" fill="#fff" stroke="#0052CC" stroke-width="1.5"/>
- <text class="nm" x="344" y="47" fill="#0052CC">A5</text>
- <path class="w" d="M368,60 H416"/>
- <path class="w" d="M292,60 V108 H312"/>
- <polygon points="312,99 312,117 332,108" fill="#E3FCEF" stroke="#00875A" stroke-width="1.6"/><circle cx="335" cy="108" r="3" fill="#fff" stroke="#00875A" stroke-width="1.5"/>
- <text class="nm" x="314" y="132" fill="#00875A">A3″</text>
- <path class="w" d="M338,108 H412 V60"/>
- <text class="nm" x="414" y="55" fill="#5E6C84">U</text>
- <text x="235" y="192" text-anchor="middle" style="font:600 10px sans-serif;fill:#DE350B">8 inverters = EVEN parity → non-inverting loop → latch</text>
-</svg>'''
+# ---- 8-inverter "4-helper" ring: correct 4-net topology (alpha,beta,gamma,delta) ----
+def _inv(cx, cy, ang, color, name, nx, ny):
+    return (f'<g transform="translate({cx} {cy}) rotate({ang:.1f})">'
+            f'<polygon points="-11,-8 -11,8 11,0" fill="{color}22" stroke="{color}" stroke-width="1.6"/>'
+            f'<circle cx="14" cy="0" r="3" fill="#fff" stroke="{color}" stroke-width="1.5"/></g>'
+            f'<text x="{nx}" y="{ny}" style="font:700 9px sans-serif;fill:{color}">{name}</text>')
+
+_N = {"al": (55, 150), "be": (215, 45), "ga": (375, 150), "de": (215, 255)}
+def _ang(p, q): return math.degrees(math.atan2(q[1]-p[1], q[0]-p[0]))
+def _mid(p, q): return ((p[0]+q[0])/2, (p[1]+q[1])/2)
+
+_edges = [("al","be","#0052CC","A1"), ("be","ga","#0052CC","A2"),
+          ("ga","de","#172B4D","A4"), ("de","al","#172B4D","A5")]
+_p = []
+# ring + diagonal wires
+for s,d,c,nm in _edges:
+    p,q=_N[s],_N[d]
+    _p.append(f'<line x1="{p[0]}" y1="{p[1]}" x2="{q[0]}" y2="{q[1]}" stroke="#5E6C84" stroke-width="1.3"/>')
+_p.append('<line x1="55" y1="150" x2="375" y2="150" stroke="#5E6C84" stroke-width="1.3"/>')
+_p.append('<line x1="215" y1="45" x2="215" y2="255" stroke="#5E6C84" stroke-width="1.3"/>')
+# edge (ring) inverters
+for s,d,c,nm in _edges:
+    m=_mid(_N[s],_N[d]); a=_ang(_N[s],_N[d])
+    _p.append(_inv(m[0],m[1],a,c,nm,m[0]-8,m[1]-13))
+# diagonal (helper) inverters — the 4 helpers
+_p.append(_inv(150,150,0,   "#00A3BF","A3", 138,140))   # al->ga  (cyan helper)
+_p.append(_inv(280,150,180, "#00875A","A3″",268,140))  # ga->al  (green)
+_p.append(_inv(215,110,90,  "#FF8B00","A3′",222,110))  # be->de  (orange)
+_p.append(_inv(215,195,270, "#DE350B","A3‴",222,199))  # de->be  (red)
+# node dots + Greek labels
+for k,(x,y) in _N.items(): _p.append(f'<circle cx="{x}" cy="{y}" r="3.5" fill="#172B4D"/>')
+for t,x,y in [("α",38,155),("β",210,34),("γ",384,155),("δ",210,278)]:
+    _p.append(f'<text x="{x}" y="{y}" style="font:700 14px serif;fill:#172B4D">{t}</text>')
+_p.append('<text x="215" y="296" text-anchor="middle" style="font:600 10px sans-serif;fill:#00875A">'
+          '4 nets · ring (A1→A2→A4→A5) + 4 helper diagonals → oscillates</text>')
+RING8_SVG = ('<svg viewBox="0 0 430 310" xmlns="http://www.w3.org/2000/svg" style="max-width:430px">'
+             + "".join(_p) + '</svg>')
 
 sec6 = f'''{MARK0}
 <div id="sky130" class="sub">6 · 🔬 SkyWater sky130 transistor-level simulation</div>
@@ -137,44 +133,50 @@ ngspice result — the exact decks are in Section 7.</p>
 </tbody></table>
 '''
 
-sec_8inv = f'''<div id="ring8" class="sub">7 · 🔁 8-inverter "4-helper" ring — the even-parity latch</div>
-<p>The hand sketch's <b>"Result: 4 helpers A₃"</b> circuit chains the helper idea into a 4-cell ring:
-two 2-inverter cells (each bridged by a parallel helper) plus two single inverters — <b>8 inverters total</b>.
-I built and simulated exactly this topology in sky130 ngspice. It is a clean, faithful test of what happens
-when you scale the helper trick up — and the answer is a direct consequence of the page's own thesis.</p>
+sec_8inv = f'''<div id="ring8" class="sub">7 · 🔁 8-inverter "4-helper" ring — a 4-net, 4-phase oscillator</div>
+<p>The hand sketch's <b>"Result: 4 helpers A₃"</b> circuit is not a simple chain — it has only <b>four nets</b>
+(α, β, γ, δ) wired symmetrically: a distance-1 ring <b>α→β→γ→δ→α</b> (A1, A2, A4, A5) plus four <b>helper
+diagonals</b> — α→γ (A3), γ→α (A3″), β→δ (A3′), δ→β (A3‴). Every net is driven by two inverter outputs
+(shorted together) and drives two — the "phase-averaging" the sketch is about. I built this exact 4-net
+topology in sky130 ngspice.</p>
 
-<div class="simfig" style="max-width:560px;margin-left:0">{RING8_SVG}
-  <div class="cap" style="text-align:left">Traced topology: U→A₃‴→P→[A1·A2 ∥ helper A3]→R→A₃′→S→[A4·A5 ∥ helper A3″]→U. Both loop paths
-  have an <b>even</b> inversion count (6 through the series pairs, 4 through the helpers), so at DC the loop is non-inverting.</div></div>
+<div class="simfig" style="max-width:440px;margin-left:0">{RING8_SVG}
+  <div class="cap" style="text-align:left">Correct topology: 4 nets, 8 inverters. Ring edges A1·A2·A4·A5 (blue/navy);
+  helper diagonals A3·A3″ cross-couple α↔γ, A3′·A3‴ cross-couple β↔δ. Colors match the sketch.</div></div>
 
-<div class="panel" style="background:#FFEBE6;border-left:3px solid #DE350B;padding:12px 16px;border-radius:4px;margin:14px 0">
-<b>Result: it latches, it does not oscillate.</b> 8 is even → net non-inverting loop → <b>positive feedback</b>.
-This is the same mechanism as the §3 four-stage ring ("356°, not enough"): an even ring would need −360° of
-pole lag, reachable only at f=∞, so the DC positive feedback wins first. The 4 helpers add phase but cannot
-change the loop's parity.</div>
+<div class="panel" style="background:#E3FCEF;border-left:3px solid #00875A;padding:12px 16px;border-radius:4px;margin:14px 0">
+<b>Result: it oscillates — f<sub>osc</sub> = 2.80 GHz</b>, rail-to-rail on all four nets, ~90° apart (a 4-phase
+oscillator). The mixed helper+ring paths give <i>odd</i> inversion counts (e.g. α→γ via A3 = 1, then γ→α via
+A4·A5 = 2, total 3 = inverting), so the network meets the oscillation condition at a finite frequency —
+<b>slower than the 3-inverter ring</b> (more stages / more delay).</p></div>
 
-<p><b>AC — open-loop loop gain:</b></p>
-<div class="simfig"><img src="sky130_sim/fig_ac_8stage.png" alt="sky130 8-inverter ring loop gain: DC phase 0 deg, 119 dB, positive feedback">
-  <div class="cap">∠T ≈ 0° at DC with <b>|T| = 119 dB</b> — even higher DC loop gain than the 4-stage ring (more stages), driving a firmer latch.</div></div>
 <p><b>Transient — closed loop:</b></p>
-<div class="simfig"><img src="sky130_sim/fig_tran_8stage.png" alt="sky130 8-inverter ring transient: latches to a stable DC state, no oscillation">
-  <div class="cap">Seeded off the metastable point, the nodes snap to a stable DC state within ~0.4 ns and stay there — no oscillation.</div></div>
+<div class="simfig"><img src="sky130_sim/fig_tran_8stage.png" alt="sky130 8-inverter 4-net ring transient: four-phase sustained oscillation at 2.80 GHz">
+  <div class="cap">Four rail-to-rail waveforms v(α), v(β), v(γ), v(δ), each ~90° apart. Measured <b>f<sub>osc</sub> = 2.80 GHz</b> (T = 357 ps).</div></div>
+<p><b>Frequency content — FFT of the output:</b></p>
+<div class="simfig"><img src="sky130_sim/fig_spec_8stage.png" alt="sky130 8-inverter ring output spectrum: fundamental at 2.80 GHz plus harmonics">
+  <div class="cap">Output spectrum: clean fundamental at <b>2.80 GHz</b> + harmonics. (A single-node loop-gain Bode isn't
+  representative here — unlike the simple 3-ring, this is a <i>multiply-connected</i> network with several
+  interleaved feedback loops, so the transient + spectrum are the right views. The auxiliary single-node cut
+  deck is included in §8.)</div></div>
 
 <h3 style="margin:22px 0 6px">Summary — 3-inverter vs 8-inverter (both real sky130 ngspice)</h3>
 <table><thead><tr><th>Metric</th><th>3-inverter ring (§6)</th><th>8-inverter "4-helper" ring</th></tr></thead>
 <tbody>
-<tr><td>Inverters / parity</td><td>3 · <b>odd</b></td><td>8 · <b>even</b></td></tr>
-<tr><td>Loop at DC</td><td>inverting (negative feedback)</td><td>non-inverting (positive feedback)</td></tr>
-<tr><td>DC loop gain |T|</td><td class='num'>66 dB</td><td class='num'>119 dB</td></tr>
-<tr><td>Small-signal ∠T = 0° crossing</td><td class='num'>1.19 GHz (Barkhausen met)</td><td class='num'>only at DC → no finite crossing</td></tr>
-<tr><td>Transient behaviour</td><td><b>sustained oscillation</b></td><td><b>latches</b> to a stable DC state</td></tr>
-<tr><td>Oscillation frequency</td><td class='num'>f<sub>osc</sub> = 4.36 GHz</td><td class='num'>— (none)</td></tr>
-<tr><td>Verdict</td><td>✅ oscillator</td><td>❌ bistable latch</td></tr>
+<tr><td>Topology</td><td>simple odd ring</td><td>4 nets (α,β,γ,δ): ring + 4 helper diagonals</td></tr>
+<tr><td>Inverters</td><td class='num'>3</td><td class='num'>8</td></tr>
+<tr><td>Transient behaviour</td><td><b>sustained oscillation</b></td><td><b>sustained oscillation</b> (4-phase)</td></tr>
+<tr><td>Oscillation frequency</td><td class='num'>f<sub>osc</sub> = 4.36 GHz</td><td class='num'>f<sub>osc</sub> = 2.80 GHz</td></tr>
+<tr><td>Period T</td><td class='num'>229 ps</td><td class='num'>357 ps</td></tr>
+<tr><td>Output phases</td><td>3 (120° apart)</td><td>4 (~90° apart)</td></tr>
+<tr><td>Verdict</td><td>✅ oscillator</td><td>✅ oscillator, ~1.6× slower</td></tr>
 </tbody></table>
-<p class="hint">Takeaway: the helper trick can shift <i>where</i> an <b>odd</b> ring meets Barkhausen, but it cannot make an
-<b>even</b> ring oscillate — parity is set by the number of inversions around the loop, and 8 is even. To build a
-slower oscillator you add an <i>odd</i> number of stages (5, 7, 9 …), not an even one.</p>
+<p class="hint">Takeaway: the extra stages and helper diagonals lower f<sub>osc</sub> from 4.36 GHz to 2.80 GHz
+(~1.6×) and turn the 3-phase ring into a symmetric <b>4-phase</b> oscillator — more inverters and more feedback
+paths buy lower frequency and more output phases, at the cost of area and power.</p>
 '''
+
+
 
 # ---- Section 7: complete reproduce code, read from the actual files ----
 FILES = [
@@ -195,8 +197,8 @@ cd sky130_sim
     ("ac_loopgain_4stage.spice — even ring, open-loop AC", "spice", "ac_loopgain_4stage.spice", None),
     ("tran_3stage.spice — odd ring, transient (oscillates)", "spice", "tran_3stage.spice", None),
     ("tran_4stage.spice — even ring, transient (latches)", "spice", "tran_4stage.spice", None),
-    ("ac_loopgain_8stage.spice — 8-inverter 4-helper ring, open-loop AC", "spice", "ac_loopgain_8stage.spice", None),
-    ("tran_8stage.spice — 8-inverter 4-helper ring, transient (latches)", "spice", "tran_8stage.spice", None),
+    ("tran_8stage.spice — 8-inverter 4-net ring, transient (oscillates, 2.80 GHz)", "spice", "tran_8stage.spice", None),
+    ("ac_loopgain_8stage.spice — 8-inverter ring, auxiliary single-node loop-gain cut", "spice", "ac_loopgain_8stage.spice", None),
     ("plot_results.py — figures from the ngspice data", "python", "plot_results.py", None),
     ("run.sh — one-shot driver", "bash", "run.sh", None),
 ]
@@ -213,25 +215,43 @@ sec7 = ('<div id="repro" class="sub">8 · 🧾 Complete code to reproduce</div>\
         '<p>Everything needed to regenerate every curve above from scratch. Files live in '
         '<code>sky130_sim/</code>. The netlists carry a <code>__LIBPATH__</code> placeholder that '
         '<code>run.sh</code> substitutes with your local sky130 model path.</p>\n'
-        + "\n".join(blocks) + f"\n{MARK1}\n")
+        + "\n".join(blocks))
+
+sec_mistakes = (
+    '<div id="mistakes" class="sub">9 · 🧭 Mistakes &amp; Corrections</div>\n'
+    '<p>Kept honestly, in the spirit of the AI-mistakes log:</p>\n'
+    '<ul style="line-height:1.7">\n'
+    '<li><b>Mistake Claude made:</b> On the first pass I mis-read the "4 helpers A₃" sketch as a '
+    '<b>7-node linear cascade</b> (P→Q→R→S→T→U with a feedback wire). That version has even parity, '
+    'so ngspice showed it <b>latching</b> — and I reported "8-inverter ring can\'t oscillate."</li>\n'
+    '<li><b>Correction Bo-Ren suggested:</b> The real circuit has only <b>4 nets — α, β, γ, δ</b>: a '
+    'distance-1 ring α→β→γ→δ→α plus <b>four helper diagonals</b> (α↔γ and β↔δ cross-couples). Every net is '
+    'driven by two shorted inverter outputs.</li>\n'
+    '<li><b>What Claude learned:</b> With the correct 4-net topology it <b>oscillates at 2.80 GHz</b> '
+    '(a 4-phase oscillator) — the mixed helper+ring paths form <i>odd</i> feedback loops. Lesson: trace the '
+    'actual <b>nets and loops</b> from the drawing before assuming a linear cascade, and re-simulate the '
+    'corrected netlist rather than trusting the first reading.</li>\n'
+    '</ul>\n'
+    f"{MARK1}\n")
 
 # ---- splice into index.html ----
 doc = open(INDEX).read()
 # remove any previous insert (idempotent)
 doc = re.sub(re.escape(MARK0) + r".*?" + re.escape(MARK1) + r"\s*", "", doc, flags=re.S)
 
-payload = sec6 + "\n" + sec_8inv + "\n" + sec7
+payload = sec6 + "\n" + sec_8inv + "\n" + sec7 + "\n" + sec_mistakes
 close = "</div></body></html>"
 assert close in doc, "close marker not found"
 doc = doc.replace(close, payload + close, 1)
 
 # normalize index-list entries for the sim sections (idempotent: strip then re-add)
-doc = re.sub(r'\n?\s*<li><a href="#(sky130|ring8|repro)">[^<]*</a></li>', '', doc)
+doc = re.sub(r'\n?\s*<li><a href="#(sky130|ring8|repro|mistakes)">[^<]*</a></li>', '', doc)
 li_anchor = '<li><a href="#code">5 · 🐍 Python model source</a></li>'
 extra = (li_anchor +
          '\n <li><a href="#sky130">6 · 🔬 SkyWater sky130 transistor-level simulation</a></li>'
-         '\n <li><a href="#ring8">7 · 🔁 8-inverter "4-helper" ring — even-parity latch</a></li>'
-         '\n <li><a href="#repro">8 · 🧾 Complete code to reproduce</a></li>')
+         '\n <li><a href="#ring8">7 · 🔁 8-inverter "4-helper" ring — 4-net oscillator</a></li>'
+         '\n <li><a href="#repro">8 · 🧾 Complete code to reproduce</a></li>'
+         '\n <li><a href="#mistakes">9 · 🧭 Mistakes &amp; Corrections</a></li>')
 doc = doc.replace(li_anchor, extra, 1)
 
 open(INDEX, "w").write(doc)
