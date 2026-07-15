@@ -34,18 +34,23 @@ a1.plot(fx, mx, "o", color=RED)
 a1.annotate(f"|T| = {mx:.0f} dB ({10**(mx/20):.0f}×)\n≫ 1  → starts",
             (fx, mx), (fx*1.4, mx+8), color=RED, fontsize=9,
             arrowprops=dict(arrowstyle="->", color=RED))
+a1.axvline(4.364e9, color=GREEN, ls="-.", lw=1.2)
 a1.set_ylabel("|T|  loop gain  [dB]"); a1.set_title(
     "sky130 3-stage ring — open-loop loop gain  (tt, 1.8 V, 27 °C)", fontsize=11)
 a2.semilogx(f, ph, color=BLUE, lw=2)
 a2.axhline(0, color=RED, ls=":", lw=1.2)
 a2.axvline(fx, color=RED, ls="--", lw=1.2)
-a2.annotate(f"∠T = 0°  @  {fx/1e9:.2f} GHz\n(small-signal Barkhausen)",
-            (fx, 0), (fx*1.4, 40), color=RED, fontsize=9,
+a2.axvline(4.364e9, color=GREEN, ls="-.", lw=1.2)
+a2.annotate(f"∠T = 0°  @  {fx/1e9:.2f} GHz\nsmall-signal startup\n(trip-point bias, high r_o)",
+            (fx, 0), (fx*0.06, 55), color=RED, fontsize=8.5,
             arrowprops=dict(arrowstyle="->", color=RED))
+a2.annotate("large-signal f_osc = 4.36 GHz\n(delay-limited, from transient)",
+            (4.364e9, -60), (4.8e9, -150), color=GREEN, fontsize=8.5,
+            arrowprops=dict(arrowstyle="->", color=GREEN))
 a2.set_ylabel("∠T  [deg]"); a2.set_xlabel("frequency  [Hz]")
 a2.set_yticks([-180, -90, 0, 90, 180])
 fig.tight_layout(); fig.savefig("fig_ac_3stage.png", bbox_inches="tight")
-print(f"3-stage AC: phase=0 at {fx/1e9:.3f} GHz, |T|={mx:.1f} dB")
+print(f"3-stage AC: small-signal phase=0 at {fx/1e9:.3f} GHz vs large-signal f_osc 4.36 GHz")
 
 # ---------- 2. AC loop gain, 4-stage (even -> never) ----------
 f4, mag4, ph4 = load("ac_loopgain_4stage.txt")

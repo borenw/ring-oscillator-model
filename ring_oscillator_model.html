@@ -278,13 +278,35 @@ ngspice result — the exact decks are in Section 7.</p>
 
 <p><b>AC — open-loop loop gain (frequency &amp; phase response).</b> This replicates the §3/§4 Bode diagrams with real devices:</p>
 <div class="simfig"><img src="sky130_sim/fig_ac_3stage.png" alt="sky130 3-stage ring open-loop loop gain: |T| and phase vs frequency, phase crosses 0 deg at 1.19 GHz with 45 dB gain">
-  <div class="cap"><b>Odd 3-stage (§4 replica):</b> DC loop gain 66 dB; ∠T crosses 0° (Barkhausen) at <b>1.19 GHz</b> with |T| = 45 dB (169×) ≫ 1 → the loop starts oscillating.</div></div>
+  <div class="cap"><b>Odd 3-stage (§4 replica):</b> DC loop gain 66 dB; ∠T crosses 0° at <b>1.19 GHz</b>
+  (red) with |T| = 45 dB (169×) ≫ 1. That is the <b>small-signal startup</b> condition — the actual
+  steady-state <b>f<sub>osc</sub> = 4.36 GHz</b> (green) is ~3.7× higher. See the note below on why (and why the
+  sky130 model is still correct).</div></div>
 <div class="simfig"><img src="sky130_sim/fig_ac_4stage.png" alt="sky130 4-stage ring open-loop loop gain: DC phase 0 deg with 88 dB gain, positive feedback">
   <div class="cap"><b>Even 4-stage (§3 replica):</b> ∠T ≈ 0° at DC with |T| = 88 dB → a non-inverting loop = positive feedback = <b>bistable latch</b>, not an oscillator.</div></div>
 
 <p><b>Transient — closed-loop, at the bottom.</b> Let the rings run and watch the time-domain behaviour:</p>
 <div class="simfig"><img src="sky130_sim/fig_tran_3stage.png" alt="sky130 3-stage ring transient: three-phase rail-to-rail oscillation at 4.36 GHz">
-  <div class="cap"><b>Odd 3-stage → sustained oscillation.</b> Three rail-to-rail waveforms 120° apart; measured <b>f<sub>osc</sub> = 4.36 GHz</b> (T = 229 ps). The large-signal frequency is delay-limited, so it runs faster than the small-signal 1.19 GHz startup crossing — an honest, well-known gap between the two views.</div></div>
+  <div class="cap"><b>Odd 3-stage → sustained oscillation.</b> Three rail-to-rail waveforms 120° apart; measured <b>f<sub>osc</sub> = 4.36 GHz</b> (T = 229 ps, i.e. t<sub>d</sub> = 38 ps/stage and f<sub>osc</sub> = 1/(2·3·t<sub>d</sub>)).</div></div>
+
+<div class="panel" style="background:#DEEBFF;border-left:3px solid #4C9AFF;padding:12px 16px;border-radius:4px;margin:14px 0">
+<b>Why 1.19 GHz (small-signal) ≠ 4.36 GHz (transient) — and the sky130 model is <i>not</i> wrong.</b>
+Both numbers are correct; they answer different questions.
+<ul style="margin:8px 0 0;line-height:1.6">
+<li><b>The loop-gain AC is a small-signal analysis, linearised at the switching threshold.</b> The DC loop
+(closed through the 1 MH inductor) biases every inverter at V<sub>trip</sub> ≈ 0.87 V — verified in the .op.
+There both devices are <b>saturated</b>, so the output resistance is at its maximum (r<sub>o</sub> ≈ 30 kΩ
+measured), giving the <b>lowest</b> pole, f<sub>p</sub> ≈ 0.69 GHz. Three poles reach −180° at 1.73·f<sub>p</sub>
+= 1.19 GHz. That is the frequency at which oscillation <i>starts from noise</i>.</li>
+<li><b>The real oscillation is large-signal / slewing.</b> Once it swings rail-to-rail, each stage switches with
+its devices in <b>triode</b> (R<sub>on</sub> ≈ 8 kΩ, ~4× lower than r<sub>o</sub>), so the delay is short
+(t<sub>d</sub> = 38 ps) and f<sub>osc</sub> = 1/(2N·t<sub>d</sub>) = 4.36 GHz. The r<sub>o</sub>/R<sub>on</sub> ≈
+4 ratio is exactly the 3.7× frequency ratio.</li>
+<li><b>So it is a physics distinction, not a model error.</b> The sky130 <code>nfet_01v8</code>/<code>pfet_01v8</code>
+devices are used correctly; a ring oscillator is inherently a large-signal circuit, and no single-bias
+small-signal AC can predict its steady-state frequency. The delay-based f<sub>osc</sub> = 1/(2N·t<sub>d</sub>) is
+the right predictor — and it matches the transient to the digit.</li>
+</ul></div>
 <p><b>Open-loop response of the helper cell — A1·A2 (series) ∥ A3.</b> This is the building block the 4-helper
 oscillator (§7) is made of: two inverters in series, in parallel with a single helper A3 (outputs shorted, the
 "phase-averaging" node). Its open-loop amplitude &amp; phase directly predict the oscillation frequency:</p>
@@ -294,7 +316,7 @@ oscillator (§7) is made of: two inverters in series, in parallel with a single 
   than A3 (1 pole), so the summed output swings from non-inverting at DC to fully inverting (−180°) at a finite
   frequency — that crossing is what sets where the ring built from these cells oscillates.</div></div>
 
-<table><thead><tr><th>Ring</th><th>Parity</th><th>Small-signal ∠T=0°</th><th>Loop gain there</th><th>Transient result</th></tr></thead>
+<table><thead><tr><th>Ring</th><th>Parity</th><th>Small-signal startup (∠T=0°)</th><th>Loop gain there</th><th>Large-signal transient</th></tr></thead>
 <tbody>
 <tr><td>3-stage</td><td>odd → inverting</td><td class='num'>1.19 GHz</td><td class='num'>45 dB (169×)</td><td><b>oscillates, f<sub>osc</sub> = 4.36 GHz</b></td></tr>
 <tr><td>4-stage</td><td>even → non-inverting</td><td class='num'>— (0° only at DC)</td><td class='num'>88 dB at DC</td><td><b>latches</b> (bistable)</td></tr>
@@ -626,18 +648,23 @@ a1.plot(fx, mx, &quot;o&quot;, color=RED)
 a1.annotate(f&quot;|T| = {mx:.0f} dB ({10**(mx/20):.0f}×)\n≫ 1  → starts&quot;,
             (fx, mx), (fx*1.4, mx+8), color=RED, fontsize=9,
             arrowprops=dict(arrowstyle=&quot;-&gt;&quot;, color=RED))
+a1.axvline(4.364e9, color=GREEN, ls=&quot;-.&quot;, lw=1.2)
 a1.set_ylabel(&quot;|T|  loop gain  [dB]&quot;); a1.set_title(
     &quot;sky130 3-stage ring — open-loop loop gain  (tt, 1.8 V, 27 °C)&quot;, fontsize=11)
 a2.semilogx(f, ph, color=BLUE, lw=2)
 a2.axhline(0, color=RED, ls=&quot;:&quot;, lw=1.2)
 a2.axvline(fx, color=RED, ls=&quot;--&quot;, lw=1.2)
-a2.annotate(f&quot;∠T = 0°  @  {fx/1e9:.2f} GHz\n(small-signal Barkhausen)&quot;,
-            (fx, 0), (fx*1.4, 40), color=RED, fontsize=9,
+a2.axvline(4.364e9, color=GREEN, ls=&quot;-.&quot;, lw=1.2)
+a2.annotate(f&quot;∠T = 0°  @  {fx/1e9:.2f} GHz\nsmall-signal startup\n(trip-point bias, high r_o)&quot;,
+            (fx, 0), (fx*0.06, 55), color=RED, fontsize=8.5,
             arrowprops=dict(arrowstyle=&quot;-&gt;&quot;, color=RED))
+a2.annotate(&quot;large-signal f_osc = 4.36 GHz\n(delay-limited, from transient)&quot;,
+            (4.364e9, -60), (4.8e9, -150), color=GREEN, fontsize=8.5,
+            arrowprops=dict(arrowstyle=&quot;-&gt;&quot;, color=GREEN))
 a2.set_ylabel(&quot;∠T  [deg]&quot;); a2.set_xlabel(&quot;frequency  [Hz]&quot;)
 a2.set_yticks([-180, -90, 0, 90, 180])
 fig.tight_layout(); fig.savefig(&quot;fig_ac_3stage.png&quot;, bbox_inches=&quot;tight&quot;)
-print(f&quot;3-stage AC: phase=0 at {fx/1e9:.3f} GHz, |T|={mx:.1f} dB&quot;)
+print(f&quot;3-stage AC: small-signal phase=0 at {fx/1e9:.3f} GHz vs large-signal f_osc 4.36 GHz&quot;)
 
 # ---------- 2. AC loop gain, 4-stage (even -&gt; never) ----------
 f4, mag4, ph4 = load(&quot;ac_loopgain_4stage.txt&quot;)
