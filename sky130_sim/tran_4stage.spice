@@ -1,0 +1,27 @@
+* ================================================================
+*  sky130 4-stage ring  --  CLOSED-LOOP transient  (EVEN = latch)
+*  Even # of inversions -> net NON-inverting loop -> positive
+*  feedback -> two stable states. It LATCHES, it does not oscillate.
+*  ("178 deg x2 = 356 deg, not enough" -> no sustained oscillation.)
+* ================================================================
+.lib "__LIBPATH__" tt
+.include "inv.spice"
+
+.param SUP=1.8
+Vdd vdd 0 {SUP}
+
+* --- closed 4-stage ring: n1 -> n2 -> n3 -> n4 -> n1 ---
+Xi1 n1 n2 vdd 0 inv
+Xi2 n2 n3 vdd 0 inv
+Xi3 n3 n4 vdd 0 inv
+Xi4 n4 n1 vdd 0 inv
+
+* start near the metastable point with a tiny nudge on n1
+.ic v(n1)=0.95 v(n2)=0.85 v(n3)=0.95 v(n4)=0.85
+
+.control
+  tran 1p 12n uic
+  wrdata tran_4stage.txt v(n1) v(n2) v(n3) v(n4)
+  print "--- 4-stage transient done ---"
+.endc
+.end

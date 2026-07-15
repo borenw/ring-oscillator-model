@@ -1,0 +1,8 @@
+* sky130 CMOS inverter subcircuit (1.8 V core devices)
+* PFET sized 2x NFET so the switching threshold sits near VDD/2.
+.subckt inv in out vdd vss
+XMP out in vdd vdd sky130_fd_pr__pfet_01v8 L=0.15 W=2.0 nf=1 m=1
+XMN out in vss vss sky130_fd_pr__nfet_01v8 L=0.15 W=1.0 nf=1 m=1
+* small explicit load so every stage sees a realistic fan-out cap
+Cload out vss 5f
+.ends inv

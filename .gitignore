@@ -1,0 +1,3 @@
+.DS_Store
+sky130_sim/_run_*.spice
+sky130_sim/LIBPATH.txt

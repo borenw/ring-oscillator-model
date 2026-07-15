@@ -1,0 +1,30 @@
+* ================================================================
+*  sky130 3-stage ring oscillator  --  CLOSED-LOOP transient
+*  Odd ring -> no stable static state -> sustained oscillation.
+*  .ic kicks it off the metastable point; it self-starts from there.
+* ================================================================
+.lib "__LIBPATH__" tt
+.include "inv.spice"
+
+.param SUP=1.8
+Vdd vdd 0 {SUP}
+
+* --- closed 3-stage ring: n1 -> n2 -> n3 -> n1 ---
+Xi1 n1 n2 vdd 0 inv
+Xi2 n2 n3 vdd 0 inv
+Xi3 n3 n1 vdd 0 inv
+
+* seed the loop away from the Vtrip metastable point
+.ic v(n1)=0 v(n2)=1.8 v(n3)=0
+
+.control
+  tran 1p 12n uic
+  wrdata tran_3stage.txt v(n1) v(n2) v(n3)
+  * measure the oscillation period from settled cycles (rising-edge crossings @ 0.9 V)
+  meas tran t1 when v(n1)=0.9 rise=3
+  meas tran t2 when v(n1)=0.9 rise=4
+  let Tosc = t2 - t1
+  let Fosc = 1/Tosc
+  print Tosc Fosc
+.endc
+.end

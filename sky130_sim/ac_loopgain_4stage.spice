@@ -1,0 +1,29 @@
+* ================================================================
+*  sky130 4-stage ring  --  OPEN-LOOP loop-gain (AC)
+*  EVEN number of inversions -> net NON-inverting loop.
+*  DC loop gain is positive and huge (~88 dB) -> two stable states
+*  -> the ring LATCHES; it is NOT a frequency-domain oscillator.
+*  (Same loop-break method as the 3-stage deck.)
+* ================================================================
+.lib "__LIBPATH__" tt
+.include "inv.spice"
+
+.param SUP=1.8
+Vdd vdd 0 {SUP}
+
+Xi1 n1  n2  vdd 0 inv
+Xi2 n2  n3  vdd 0 inv
+Xi3 n3  n4  vdd 0 inv
+Xi4 n4  n3o vdd 0 inv
+
+Lbrk n3o n1  1e6
+Cinj nac n1  1e6
+Vac  nac 0   dc 0 ac 1
+
+.control
+  ac dec 60 1e6 5e11
+  let tmag = db(v(n3o))
+  let tph  = 180/PI * ph(v(n3o))
+  wrdata ac_loopgain_4stage.txt tmag tph
+.endc
+.end

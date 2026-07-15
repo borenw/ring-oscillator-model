@@ -1,0 +1,37 @@
+* ================================================================
+*  sky130 3-stage ring oscillator  --  OPEN-LOOP loop-gain (AC)
+*  Replicates the phase-shift Bode diagram with real transistors.
+*
+*  Loop-break method (inductor / coupling-cap):
+*    - Lbrk closes the loop at DC, so every stage self-biases to its
+*      own switching threshold (the true ring operating point), but
+*      is OPEN at AC -> the loop is broken for the small-signal test.
+*    - Cinj (huge) injects the AC stimulus into n1 at AC only.
+*    - With V(n1)=1<0 at AC, the measured loop gain is T = V(n3o).
+*  Oscillation (Barkhausen): |T| >= 1 where /_T = 0 deg (mod 360).
+* ================================================================
+.lib "__LIBPATH__" tt
+.include "inv.spice"
+
+.param SUP=1.8
+Vdd vdd 0 {SUP}
+
+* --- three inverter stages: n1 -> n2 -> n3 -> n3o ---
+Xi1 n1  n2  vdd 0 inv
+Xi2 n2  n3  vdd 0 inv
+Xi3 n3  n3o vdd 0 inv
+
+* --- loop break: DC-closed (bias), AC-open ---
+Lbrk n3o n1  1e6
+* --- AC injection into n1 (DC-blocked) ---
+Cinj nac n1  1e6
+Vac  nac 0   dc 0 ac 1
+
+.control
+  ac dec 60 1e6 5e11
+  let tmag = db(v(n3o))
+  let tph  = 180/PI * ph(v(n3o))
+  wrdata ac_loopgain_3stage.txt tmag tph
+  print "--- 3-stage open-loop scan done ---"
+.endc
+.end
