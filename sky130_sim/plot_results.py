@@ -99,19 +99,33 @@ ax.legend(ncol=3, fontsize=9, loc="lower center")
 fig.tight_layout(); fig.savefig("fig_tran_3stage.png", bbox_inches="tight")
 print(f"3-stage transient: f_osc = {fosc/1e9:.3f} GHz (T = {Tosc*1e12:.0f} ps)")
 
-# ---------- 4. Transient, 4-stage (latches) ----------
-d = np.loadtxt("tran_4stage.txt")
-t4 = d[:, 0]; v = [d[:, 1], d[:, 3], d[:, 5], d[:, 7]]
-fig, ax = plt.subplots(figsize=(7.4, 3.4))
-cols = [BLUE, RED, GREEN, "#6554C0"]
-for k in range(4):
-    ax.plot(t4*1e9, v[k], color=cols[k], lw=1.5, label=f"v(n{k+1})")
-ax.set_xlabel("time  [ns]"); ax.set_ylabel("V"); ax.set_xlim(0, 6)
-ax.set_title("sky130 4-stage ring — transient: LATCHES to a stable state "
-             "(no oscillation)", fontsize=11)
-ax.legend(ncol=4, fontsize=9, loc="center right")
-fig.tight_layout(); fig.savefig("fig_tran_4stage.png", bbox_inches="tight")
-print("4-stage transient: latched (even ring, no oscillation)")
+# ---------- 4. Open-loop Bode of the parallel-helper cell:  A1·A2 (series) ∥ A3 ----------
+fo, mo, po = load("ac_openloop_A12parA3.txt")
+po = np.unwrap(np.radians(po)) * 180/np.pi
+fx = None
+for i in range(1, len(fo)):
+    if (po[i-1]+180)*(po[i]+180) < 0:
+        fx = fo[i-1] + (-180-po[i-1])*(fo[i]-fo[i-1])/(po[i]-po[i-1])
+        mx = np.interp(fx, fo, mo); break
+FOSC8 = 2.80e9   # transient f_osc of the 4-helper oscillator built from these cells
+fig, (a1, a2) = plt.subplots(2, 1, figsize=(7.2, 5.4), sharex=True)
+a1.semilogx(fo, mo, color=BLUE, lw=2); a1.axhline(0, color=GREY, ls=":", lw=1)
+a1.axvline(fx, color=RED, ls="--", lw=1.2); a1.plot(fx, mx, "o", color=RED)
+a1.annotate(f"|H| = {mx:.0f} dB (>0 dB)", (fx, mx), (fx*1.5, mx+8), color=RED, fontsize=9,
+            arrowprops=dict(arrowstyle="->", color=RED))
+a1.set_ylabel("|H|  amplitude  [dB]")
+a1.set_title("sky130 open-loop  A1·A2 (series) ∥ A3  — 3-inverter helper cell", fontsize=10.5)
+a2.semilogx(fo, po, color=BLUE, lw=2)
+a2.axhline(-180, color=RED, ls=":", lw=1.2); a2.axvline(fx, color=RED, ls="--", lw=1.2)
+a2.axvline(FOSC8/1, color=GREEN, ls="-.", lw=1.2)
+a2.annotate(f"∠H = −180°  @  {fx/1e9:.2f} GHz\n≈ 4-helper osc. f_osc = 2.80 GHz",
+            (fx, -180), (fo[0]*8, -120), color=RED, fontsize=9,
+            arrowprops=dict(arrowstyle="->", color=RED))
+a2.set_ylabel("∠H  phase  [deg]"); a2.set_xlabel("frequency  [Hz]")
+a2.set_yticks([-360, -270, -180, -90, 0])
+fig.tight_layout(); fig.savefig("fig_openloop_A12parA3.png", bbox_inches="tight")
+print(f"open-loop A12||A3: ∠H=-180° at {fx/1e9:.2f} GHz, |H|={mx:.1f} dB "
+      f"(vs 4-helper transient f_osc 2.80 GHz)")
 
 # ---------- 5. Transient, 8-inverter "4-helper" ring (oscillates) ----------
 d = np.loadtxt("tran_8stage.txt")

@@ -123,8 +123,14 @@ ngspice result — the exact decks are in Section 7.</p>
 <p><b>Transient — closed-loop, at the bottom.</b> Let the rings run and watch the time-domain behaviour:</p>
 <div class="simfig"><img src="sky130_sim/fig_tran_3stage.png" alt="sky130 3-stage ring transient: three-phase rail-to-rail oscillation at 4.36 GHz">
   <div class="cap"><b>Odd 3-stage → sustained oscillation.</b> Three rail-to-rail waveforms 120° apart; measured <b>f<sub>osc</sub> = 4.36 GHz</b> (T = 229 ps). The large-signal frequency is delay-limited, so it runs faster than the small-signal 1.19 GHz startup crossing — an honest, well-known gap between the two views.</div></div>
-<div class="simfig"><img src="sky130_sim/fig_tran_4stage.png" alt="sky130 4-stage ring transient: latches to a stable state, no oscillation">
-  <div class="cap"><b>Even 4-stage → latch.</b> Nodes settle to a stable alternating DC state (n1=n3=1.8 V, n2=n4=0 V) and stay there. No oscillation, exactly as the parity argument predicts.</div></div>
+<p><b>Open-loop response of the helper cell — A1·A2 (series) ∥ A3.</b> This is the building block the 4-helper
+oscillator (§7) is made of: two inverters in series, in parallel with a single helper A3 (outputs shorted, the
+"phase-averaging" node). Its open-loop amplitude &amp; phase directly predict the oscillation frequency:</p>
+<div class="simfig"><img src="sky130_sim/fig_openloop_A12parA3.png" alt="Open-loop amplitude and phase of A1.A2 series parallel A3: phase reaches -180 deg at 2.97 GHz, close to the 2.80 GHz transient f_osc">
+  <div class="cap"><b>∠H reaches −180° at 2.97 GHz</b> (with |H| = 13 dB &gt; 0 dB) — <b>very close to the 4-helper
+  oscillator's transient f<sub>osc</sub> = 2.80 GHz</b> (green line). The A12 path (2 poles) rolls off faster
+  than A3 (1 pole), so the summed output swings from non-inverting at DC to fully inverting (−180°) at a finite
+  frequency — that crossing is what sets where the ring built from these cells oscillates.</div></div>
 
 <table><thead><tr><th>Ring</th><th>Parity</th><th>Small-signal ∠T=0°</th><th>Loop gain there</th><th>Transient result</th></tr></thead>
 <tbody>
@@ -194,6 +200,7 @@ cd sky130_sim
 ./run.sh'''),
     ("inv.spice — sky130 CMOS inverter", "spice", "inv.spice", None),
     ("ac_loopgain_3stage.spice — odd ring, open-loop AC", "spice", "ac_loopgain_3stage.spice", None),
+    ("ac_openloop_A12parA3.spice — helper cell A1·A2 ∥ A3, open-loop amplitude/phase", "spice", "ac_openloop_A12parA3.spice", None),
     ("ac_loopgain_4stage.spice — even ring, open-loop AC", "spice", "ac_loopgain_4stage.spice", None),
     ("tran_3stage.spice — odd ring, transient (oscillates)", "spice", "tran_3stage.spice", None),
     ("tran_4stage.spice — even ring, transient (latches)", "spice", "tran_4stage.spice", None),

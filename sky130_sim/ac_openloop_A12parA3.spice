@@ -1,0 +1,30 @@
+* ================================================================
+*  Open-loop transfer of the parallel-helper 3-inverter cell:
+*    A1,A2 in SERIES (xin -> xmid -> yout) in PARALLEL with A3 (xin -> yout).
+*  A2 and A3 outputs are shorted at yout (current summing = phase averaging).
+*  Loop broken with Lbrk (DC-closed for bias, AC-open); stimulus at xin.
+*  H(f) = V(yout)/V(xin).  We look for the 180-deg crossing.
+* ================================================================
+.lib "__LIBPATH__" tt
+.include "inv.spice"
+
+.param SUP=1.8
+Vdd vdd 0 {SUP}
+
+Xa1 xin  xmid vdd 0 inv      ; A1
+Xa2 xmid yout vdd 0 inv      ; A2   (A12 = A1.A2 in series)
+Xa3 xin  yout vdd 0 inv      ; A3   parallel helper, shorted at yout
+
+Lbrk yout xin 1e6
+Cinj nac  xin 1e6
+Vac  nac 0    dc 0 ac 1
+
+.control
+  op
+  print v(xin) v(yout) v(xmid)
+  ac dec 80 1e6 1e12
+  let hmag = db(v(yout))
+  let hph  = 180/PI * ph(v(yout))
+  wrdata ac_openloop_A12parA3.txt hmag hph
+.endc
+.end
